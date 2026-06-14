@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="it" data-theme="classico" data-font="crimson">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dar Safra — Memorie di Tangeri</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #F5F1E8; --surface: #FFFFFF; --surface-2: #FBF8F1;
+    --text: #33302B; --muted: #7C7568;
+    --primary: #C0683B; --primary-soft: rgba(192,104,59,.10);
+    --secondary: #1B4965; --secondary-soft: rgba(27,73,101,.08);
+    --border: #E7DECF;
+    --hero-overlay: linear-gradient(180deg, rgba(38,24,14,.20) 0%, rgba(38,24,14,.55) 78%, rgba(38,24,14,.66) 100%);
+    --heading-font: 'Crimson Text', Georgia, serif;
+    --body-font: 'Poppins', system-ui, sans-serif;
+    --maxw: 1180px;
+    --radius: 14px;
+  }
+  [data-theme="editoriale"] {
+    --bg: #F4EFE6; --surface: #FBF7F0; --surface-2: #EFE8DC;
+    --text: #211F1A; --muted: #6E675B;
+    --primary: #B14E28; --primary-soft: rgba(177,78,40,.10);
+    --secondary: #2A2722; --secondary-soft: rgba(42,39,34,.07);
+    --border: #E0D6C4;
+    --hero-overlay: linear-gradient(180deg, rgba(18,16,12,.24) 0%, rgba(18,16,12,.60) 80%, rgba(18,16,12,.70) 100%);
+  }
+  [data-theme="mediterraneo"] {
+    --bg: #EDF4F7; --surface: #FFFFFF; --surface-2: #F3F9FB;
+    --text: #163446; --muted: #5C7484;
+    --primary: #0E6BA8; --primary-soft: rgba(14,107,168,.10);
+    --secondary: #0A4E7A; --secondary-soft: rgba(10,78,122,.08);
+    --border: #D6E4EC;
+    --hero-overlay: linear-gradient(180deg, rgba(8,38,60,.18) 0%, rgba(8,38,60,.52) 78%, rgba(8,40,64,.64) 100%);
+  }
+  [data-font="crimson"]   { --heading-font: 'Crimson Text', Georgia, serif; }
+  [data-font="cormorant"] { --heading-font: 'Cormorant Garamond', Georgia, serif; }
+
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: var(--body-font); color: var(--text); background: var(--bg);
+    line-height: 1.65; overflow-x: hidden; -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3, h4 { font-family: var(--heading-font); font-weight: 600; line-height: 1.12; }
+  a { color: inherit; }
+  img { display: block; max-width: 100%; }
+
+  .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 28px; }
+  section { padding: 88px 0; }
+  .eyebrow {
+    font-family: var(--body-font); font-size: .78rem; font-weight: 600;
+    letter-spacing: .22em; text-transform: uppercase; color: var(--primary);
+    margin-bottom: 14px;
+  }
+  .section-head { max-width: 720px; margin: 0 auto 52px; text-align: center; }
+  .section-head h2 { font-size: clamp(2rem, 4vw, 2.9rem); }
+  .section-head p { color: var(--muted); margin-top: 12px; font-size: 1.05rem; }
+
+  /* ---------- Navbar ---------- */
+  nav {
+    position: fixed; top: 0; left: 0; width: 100%; z-index: 1000;
+    transition: background .35s, box-shadow .35s, border-color .35s;
+    border-bottom: 1px solid transparent;
+  }
+  nav.scrolled {
+    background: color-mix(in srgb, var(--bg) 88%, transparent);
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav-inner {
+    max-width: var(--maxw); margin: 0 auto; padding: 16px 28px;
+    display: flex; align-items: center; justify-content: space-between; gap: 20px;
+  }
+  .logo { font-family: var(--heading-font); font-size: 1.6rem; font-weight: 600; color: var(--text); letter-spacing: .01em; white-space: nowrap; flex-shrink: 0; }
+  nav:not(.scrolled) .logo, nav:not(.scrolled) .nav-links a { color: #fff; }
+  nav:not(.scrolled) .lang-toggle { background: rgba(255,255,255,.15); border-color: rgba(255,255,255,.25); }
+  nav:not(.scrolled) .lang-btn { color: #fff; }
+  nav:not(.scrolled) .menu-toggle span { background: #fff; }
+  .nav-links { display: flex; gap: 30px; list-style: none; }
+  .nav-links a {
+    text-decoration: none; font-size: .92rem; font-weight: 500; position: relative;
+    padding: 4px 0; transition: color .25s;
+  }
+  .nav-links a::after {
+    content: ''; position: absolute; left: 0; bottom: -2px; height: 2px; width: 0;
+    background: var(--primary); transition: width .3s;
+  }
+  .nav-links a:hover { color: var(--primary); }
+  .nav-links a:hover::after { width: 100%; }
+  .nav-right { display: flex; align-items: center; gap: 16px; }
+  .lang-toggle { display: flex; gap: 2px; background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 3px; }
+  .lang-btn {
+    border: none; background: transparent; cursor: pointer; font-family: var(--body-font);
+    font-size: .76rem; font-weight: 600; letter-spacing: .04em; color: var(--muted);
+    padding: 6px 11px; border-radius: 999px; transition: all .25s;
+  }
+  .lang-btn.active { background: var(--primary); color: #fff; }
+  .menu-toggle { display: none; flex-direction: column; gap: 5px; background: none; border: none; cursor: pointer; padding: 6px; }
+  .menu-toggle span { width: 24px; height: 2px; background: var(--text); border-radius: 2px; transition: .3s; }
+
+  /* ---------- Hero ---------- */
+  .hero {
+    --hero-img: url('foto/16.avif');
+    min-height: 100svh; position: relative; display: flex; align-items: flex-end;
+    color: #fff; padding-bottom: 0;
+    background-image: var(--hero-overlay), var(--hero-img);
+    background-size: cover, cover; background-position: center, center 35%;
+  }
+  .hero-inner { max-width: var(--maxw); margin: 0 auto; width: 100%; padding: 0 28px 64px; }
+  .hero .eyebrow { color: #fff; opacity: .9; }
+  .hero h1 {
+    font-size: clamp(3rem, 8vw, 6rem); color: #fff; letter-spacing: .01em;
+    text-shadow: 0 2px 30px rgba(0,0,0,.25);
+  }
+  .hero-tagline {
+    font-size: clamp(1.05rem, 2vw, 1.4rem); font-weight: 300; max-width: 620px;
+    margin: 18px 0 32px; text-shadow: 0 1px 16px rgba(0,0,0,.3);
+  }
+  .hero-cta { display: flex; gap: 14px; flex-wrap: wrap; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 9px; padding: 14px 28px; border-radius: 999px;
+    font-family: var(--body-font); font-size: .95rem; font-weight: 600; text-decoration: none;
+    cursor: pointer; border: 1.5px solid transparent; transition: all .25s;
+  }
+  .btn-primary { background: var(--primary); color: #fff; }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(0,0,0,.28); }
+  .btn-ghost { background: rgba(255,255,255,.12); color: #fff; border-color: rgba(255,255,255,.55); backdrop-filter: blur(4px); }
+  .btn-ghost:hover { background: rgba(255,255,255,.95); color: var(--text); border-color: #fff; }
+
+  /* facts strip */
+  .facts {
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; z-index: 1;
+  }
+  .facts-inner {
+    max-width: var(--maxw); margin: 0 auto; padding: 20px 28px;
+    display: flex; flex-wrap: wrap; gap: 14px 38px; justify-content: center; align-items: center;
+  }
+  .fact { display: flex; align-items: center; gap: 9px; font-size: .95rem; font-weight: 500; color: var(--text); }
+  .fact svg { width: 20px; height: 20px; stroke: var(--primary); flex-shrink: 0; }
+  .fact-dot { width: 4px; height: 4px; border-radius: 50%; background: var(--border); }
+
+  /* ---------- About ---------- */
+  .about-grid { display: grid; grid-template-columns: 1.05fr .95fr; gap: 56px; align-items: center; }
+  .about-content h2 { font-size: clamp(1.9rem, 3.4vw, 2.7rem); margin-bottom: 22px; }
+  .about-content p { color: var(--text); margin-bottom: 16px; }
+  .about-content p:first-of-type { color: var(--text); }
+  .tags { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 26px; }
+  .tag {
+    padding: 8px 15px; background: var(--primary-soft); color: var(--primary);
+    border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent);
+    border-radius: 999px; font-size: .82rem; font-weight: 500;
+  }
+  .about-photo { position: relative; }
+  .about-photo img { width: 100%; height: 560px; object-fit: cover; border-radius: var(--radius); box-shadow: 0 24px 50px rgba(0,0,0,.14); }
+
+  /* ---------- How it works ---------- */
+  #how { background: var(--surface-2); }
+  .how-steps { display: grid; grid-template-columns: 1fr 1fr; gap: 0; max-width: 920px; margin: 0 auto 52px; }
+  .how-step { padding: 4px 44px; }
+  .how-step:first-child { padding-left: 4px; }
+  .how-step:last-child { padding-right: 4px; border-left: 1px solid var(--border); }
+  .how-step .step-ico { width: 48px; height: 48px; border-radius: 12px; background: var(--primary-soft); display: grid; place-items: center; margin-bottom: 16px; }
+  .how-step .step-ico svg { width: 25px; height: 25px; stroke: var(--primary); }
+  .how-step h4 { font-size: 1.45rem; margin-bottom: 12px; }
+  .how-step p { color: var(--muted); font-size: .99rem; margin-bottom: 12px; }
+  .how-step p:last-child { margin-bottom: 0; }
+
+  .rental-callout {
+    max-width: 920px; margin: 0 auto 64px; background: var(--primary);
+    color: #fff; border-radius: var(--radius); padding: 30px 36px;
+    display: flex; gap: 22px; align-items: center;
+  }
+  .rental-callout svg { width: 40px; height: 40px; stroke: #fff; flex-shrink: 0; }
+  .rental-callout h4 { font-size: 1.3rem; color: #fff; margin-bottom: 4px; }
+  .rental-callout p { margin: 0; opacity: .95; font-size: 1.02rem; }
+  .rental-text { display: flex; flex-direction: column; gap: 14px; }
+  .rental-min { display: inline-flex; align-items: center; gap: 8px; align-self: flex-start; background: rgba(255,255,255,.16); border: 1px solid rgba(255,255,255,.42); color: #fff; padding: 7px 15px; border-radius: 999px; font-size: .86rem; font-weight: 600; }
+  .rental-min svg { width: 17px; height: 17px; stroke: #fff; flex-shrink: 0; }
+
+  .diagram-title { text-align: center; font-size: 1.4rem; margin-bottom: 28px; color: var(--text); }
+  .floors { max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; }
+  .floor {
+    display: grid; grid-template-columns: 56px 1fr auto; gap: 20px; align-items: center;
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 20px 24px; position: relative; transition: transform .25s, box-shadow .25s;
+  }
+  .floor:hover { transform: translateX(4px); box-shadow: 0 10px 24px rgba(0,0,0,.07); }
+  .floor-ico {
+    width: 56px; height: 56px; border-radius: 12px; display: grid; place-items: center;
+    background: var(--primary-soft);
+  }
+  .floor-ico svg { width: 28px; height: 28px; stroke: var(--primary); }
+  .floor-main h4 { font-size: 1.18rem; margin-bottom: 2px; }
+  .floor-main span { color: var(--muted); font-size: .92rem; }
+  .floor-badge {
+    font-size: .72rem; font-weight: 600; letter-spacing: .04em; text-transform: uppercase;
+    padding: 6px 13px; border-radius: 999px; white-space: nowrap;
+  }
+  .badge-guests { background: var(--primary-soft); color: var(--primary); }
+  .badge-shared { background: var(--secondary-soft); color: var(--secondary); }
+  .floor.is-shared .floor-ico { background: var(--secondary-soft); }
+  .floor.is-shared .floor-ico svg { stroke: var(--secondary); }
+
+  /* ---------- Spaces ---------- */
+  .spaces-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
+  .space-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; transition: transform .3s, box-shadow .3s; }
+  .space-card:hover { transform: translateY(-4px); box-shadow: 0 20px 40px rgba(0,0,0,.1); }
+  .carousel { position: relative; width: 100%; aspect-ratio: 4/3; background: var(--surface-2); }
+  .carousel-slide { position: absolute; inset: 0; opacity: 0; transition: opacity .7s ease; }
+  .carousel-slide.active { opacity: 1; }
+  .carousel-slide img { width: 100%; height: 100%; object-fit: cover; }
+  .carousel-nav {
+    position: absolute; top: 50%; transform: translateY(-50%); width: 38px; height: 38px;
+    border: none; border-radius: 50%; background: rgba(255,255,255,.82); color: var(--text);
+    font-size: 1.3rem; cursor: pointer; display: grid; place-items: center; z-index: 3;
+    opacity: 0; transition: opacity .25s, background .2s;
+  }
+  .carousel:hover .carousel-nav { opacity: 1; }
+  .carousel-nav:hover { background: #fff; }
+  .carousel-prev { left: 12px; } .carousel-next { right: 12px; }
+  .carousel-dots { position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; z-index: 3; }
+  .dot { width: 7px; height: 7px; border-radius: 999px; background: rgba(255,255,255,.55); cursor: pointer; transition: all .3s; }
+  .dot.active { background: #fff; width: 20px; }
+  .space-content { padding: 26px 28px 30px; }
+  .space-content h3 { font-size: 1.4rem; margin-bottom: 10px; }
+  .space-content > p { color: var(--muted); font-size: .96rem; margin-bottom: 16px; }
+  .space-list { list-style: none; display: flex; flex-direction: column; gap: 7px; }
+  .space-list li { position: relative; padding-left: 20px; font-size: .92rem; }
+  .space-list li::before { content: ''; position: absolute; left: 2px; top: 9px; width: 7px; height: 7px; border-radius: 50%; background: var(--primary); }
+
+  /* ---------- Good to know ---------- */
+  #goodtoknow { background: var(--surface-2); }
+  .gtk-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
+  .gtk-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px 26px; }
+  .gtk-ico { width: 50px; height: 50px; border-radius: 12px; background: var(--primary-soft); display: grid; place-items: center; margin-bottom: 18px; }
+  .gtk-ico svg { width: 26px; height: 26px; stroke: var(--primary); }
+  .gtk-card h4 { font-size: 1.22rem; margin-bottom: 8px; }
+  .gtk-card p { color: var(--muted); font-size: .94rem; margin: 0; }
+  .gtk-card.feature { background: var(--primary); }
+  .gtk-card.feature .gtk-ico { background: rgba(255,255,255,.18); }
+  .gtk-card.feature .gtk-ico svg { stroke: #fff; }
+  .gtk-card.feature h4 { color: #fff; }
+  .gtk-card.feature p { color: rgba(255,255,255,.92); }
+
+  /* ---------- Gallery ---------- */
+  .gallery-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .gallery-item { position: relative; overflow: hidden; border-radius: 10px; aspect-ratio: 1; cursor: pointer; border: none; padding: 0; background: var(--surface-2); }
+  .gallery-item img { width: 100%; height: 100%; object-fit: cover; transition: transform .5s; }
+  .gallery-item:hover img { transform: scale(1.06); }
+  .gallery-overlay { position: absolute; inset: 0; background: rgba(0,0,0,.32); display: grid; place-items: center; opacity: 0; transition: opacity .3s; }
+  .gallery-item:hover .gallery-overlay { opacity: 1; }
+  .gallery-plus { color: #fff; font-size: 2rem; font-weight: 300; line-height: 1; }
+
+  /* lightbox */
+  .lightbox { display: none; position: fixed; inset: 0; background: rgba(15,12,8,.92); z-index: 2000; align-items: center; justify-content: center; padding: 24px; }
+  .lightbox.active { display: flex; }
+  .lightbox-image { max-width: 92vw; max-height: 84vh; object-fit: contain; border-radius: 8px; }
+  .lightbox-image.changing { animation: lbFade .35s ease; }
+  @keyframes lbFade { from { opacity: .4; } to { opacity: 1; } }
+  .lightbox-close, .lightbox-nav {
+    position: absolute; border: none; background: rgba(255,255,255,.92); color: #1a1a1a;
+    cursor: pointer; display: grid; place-items: center; border-radius: 50%; transition: all .25s;
+  }
+  .lightbox-close { top: 22px; right: 22px; width: 44px; height: 44px; font-size: 1.7rem; }
+  .lightbox-nav { top: 50%; transform: translateY(-50%); width: 50px; height: 50px; font-size: 1.6rem; }
+  .lightbox-prev { left: 24px; } .lightbox-next { right: 24px; }
+  .lightbox-close:hover, .lightbox-nav:hover { background: #fff; transform: scale(1.08) translateY(0); }
+  .lightbox-nav:hover { transform: translateY(-50%) scale(1.08); }
+  .lightbox-count { position: absolute; bottom: 24px; left: 50%; transform: translateX(-50%); color: rgba(255,255,255,.85); font-size: .85rem; letter-spacing: .05em; }
+
+  /* ---------- Location ---------- */
+  .map-grid { display: grid; grid-template-columns: 1.1fr .9fr; gap: 48px; align-items: center; }
+  .map { width: 100%; height: 480px; border-radius: var(--radius); overflow: hidden; box-shadow: 0 18px 40px rgba(0,0,0,.12); }
+  .loc-info h3 { font-size: 1.7rem; margin-bottom: 10px; }
+  .loc-info > p { color: var(--muted); margin-bottom: 26px; }
+  .distances { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .distance { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--primary); border-radius: 8px; padding: 16px 18px; }
+  .distance .d-label { font-weight: 600; color: var(--text); font-size: .95rem; }
+  .distance .d-time { color: var(--primary); font-size: 1.05rem; font-family: var(--heading-font); margin-top: 4px; }
+
+  /* ---------- Contact ---------- */
+  #contact { background: var(--secondary); color: #fff; text-align: center; }
+  #contact h2 { color: #fff; font-size: clamp(2rem, 4vw, 2.8rem); }
+  .ornella-photo { width: 150px; height: 150px; border-radius: 50%; object-fit: cover; object-position: 60% center; margin: 0 auto 26px; border: 3px solid rgba(255,255,255,.35); box-shadow: 0 12px 30px rgba(0,0,0,.3); display: block; }
+  #contact p { color: rgba(255,255,255,.9); max-width: 560px; margin: 14px auto 36px; }
+  .contact-buttons { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+  .contact-btn {
+    display: inline-flex; align-items: center; gap: 11px; padding: 15px 30px; border-radius: 999px;
+    background: #fff; color: var(--secondary); text-decoration: none; font-weight: 600; transition: all .25s;
+  }
+  .contact-btn svg { width: 22px; height: 22px; }
+  .contact-btn.wa { background: #25D366; color: #fff; }
+  .contact-btn:hover { transform: translateY(-3px); box-shadow: 0 14px 30px rgba(0,0,0,.3); }
+
+  footer { background: var(--text); color: rgba(255,255,255,.7); text-align: center; padding: 30px; font-size: .88rem; }
+
+  /* WhatsApp float */
+  .wa-float {
+    position: fixed; bottom: 26px; right: 26px; width: 62px; height: 62px; border-radius: 50%;
+    background: #25D366; display: grid; place-items: center; z-index: 900;
+    box-shadow: 0 8px 22px rgba(37,211,102,.45); transition: transform .25s;
+  }
+  .wa-float svg { width: 32px; height: 32px; fill: #fff; }
+  .wa-float:hover { transform: scale(1.08); }
+
+  /* ---------- Tweaks panel ---------- */
+  .tweaks-panel {
+    position: fixed; top: 84px; right: 22px; z-index: 3000; width: 290px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+    box-shadow: 0 24px 60px rgba(0,0,0,.22); flex-direction: column; overflow: hidden;
+    font-family: var(--body-font);
+  }
+  .tw-head { display: flex; align-items: center; justify-content: space-between; padding: 16px 18px; border-bottom: 1px solid var(--border); }
+  .tw-head span { font-family: var(--heading-font); font-size: 1.2rem; font-weight: 600; color: var(--text); }
+  .tw-close { background: none; border: none; font-size: 1.6rem; line-height: 1; color: var(--muted); cursor: pointer; }
+  .tw-body { padding: 18px; display: flex; flex-direction: column; gap: 22px; }
+  .tw-label { display: block; font-size: .72rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 9px; }
+  .tw-seg { display: flex; gap: 6px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; padding: 4px; }
+  .tw-seg-wrap { flex-wrap: wrap; }
+  .tw-seg button {
+    flex: 1; min-width: 0; border: none; background: transparent; cursor: pointer;
+    font-family: var(--body-font); font-size: .8rem; font-weight: 500; color: var(--muted);
+    padding: 8px 6px; border-radius: 7px; transition: all .2s; white-space: nowrap;
+  }
+  .tw-seg-wrap button { flex: 1 1 calc(50% - 6px); }
+  .tw-seg button.active { background: var(--primary); color: #fff; }
+  .tw-hint { font-size: .8rem; color: var(--muted); margin: 9px 2px 0; line-height: 1.45; }
+
+  /* ---------- Responsive ---------- */
+  @media (max-width: 900px) {
+    .about-grid, .map-grid { grid-template-columns: 1fr; gap: 32px; }
+    .about-photo img { height: 420px; }
+    .how-steps, .spaces-grid { grid-template-columns: 1fr; }
+    .how-steps { gap: 30px; }
+    .how-step, .how-step:first-child, .how-step:last-child { padding: 0; border-left: none; }
+    .gtk-grid { grid-template-columns: 1fr 1fr; }
+    .gallery-grid { grid-template-columns: repeat(3, 1fr); }
+  }
+  @media (max-width: 720px) {
+    .nav-links {
+      display: none; position: absolute; top: 100%; left: 0; right: 0; flex-direction: column;
+      background: var(--bg); padding: 18px 28px; gap: 16px; border-bottom: 1px solid var(--border);
+    }
+    .nav-links.active { display: flex; }
+    nav:not(.scrolled) .nav-links { background: var(--bg); }
+    nav:not(.scrolled) .nav-links a { color: var(--text); }
+    .menu-toggle { display: flex; }
+    section { padding: 64px 0; }
+    .gtk-grid { grid-template-columns: 1fr; }
+    .gallery-grid { grid-template-columns: repeat(2, 1fr); }
+    .distances { grid-template-columns: 1fr; }
+    .rental-callout { flex-direction: column; text-align: center; }
+    .rental-text { align-items: center; }
+    .rental-min { align-self: center; }
+    .floor { grid-template-columns: 48px 1fr; }
+    .floor .floor-badge { grid-column: 2; justify-self: start; margin-top: 4px; }
+    .tweaks-panel { right: 12px; left: 12px; width: auto; top: 76px; }
+    .lightbox-prev { left: 10px; } .lightbox-next { right: 10px; }
+    .lightbox-nav { width: 42px; height: 42px; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto; } }
+</style>
+</head>
+<body>
+
+<!-- Tweak defaults (host-persisted) -->
+<script>
+  window.DS_TWEAKS = /*EDITMODE-BEGIN*/{
+    "theme": "classico",
+    "headingFont": "crimson",
+    "heroPhoto": "rooftop"
+  }/*EDITMODE-END*/;
+  document.documentElement.setAttribute('data-theme', window.DS_TWEAKS.theme);
+  document.documentElement.setAttribute('data-font', window.DS_TWEAKS.headingFont);
+</script>
+
+<!-- Navbar -->
+<nav>
+  <div class="nav-inner">
+    <div class="logo">Dar Safra</div>
+    <ul class="nav-links" id="navLinks">
+      <li><a href="#about" data-translate="nav.about">La Casa</a></li>
+      <li><a href="#how" data-translate="nav.how">Come funziona</a></li>
+      <li><a href="#spaces" data-translate="nav.spaces">Gli Spazi</a></li>
+      <li><a href="#goodtoknow" data-translate="nav.goodtoknow">Buono a sapersi</a></li>
+      <li><a href="#gallery" data-translate="nav.gallery">Galleria</a></li>
+      <li><a href="#contact" data-translate="nav.contact">Contatti</a></li>
+    </ul>
+    <div class="nav-right">
+      <div class="lang-toggle">
+        <button class="lang-btn active" data-lang="it">IT</button>
+        <button class="lang-btn" data-lang="en">EN</button>
+        <button class="lang-btn" data-lang="fr">FR</button>
+        <button class="lang-btn" data-lang="es">ES</button>
+      </div>
+      <button class="menu-toggle" id="menuToggle" aria-label="Menu"><span></span><span></span><span></span></button>
+    </div>
+  </div>
+</nav>
+
+<!-- Hero -->
+<header class="hero">
+  <div class="hero-inner">
+    <div class="eyebrow" data-translate="hero.subtitle">Medina · Tangeri · Marocco</div>
+    <h1 data-translate="hero.title">Dar Safra</h1>
+    <p class="hero-tagline" data-translate="hero.tagline">Memorie di Tangeri — una casa autentica nel cuore della medina</p>
+    <div class="hero-cta">
+      <a href="#about" class="btn btn-primary" data-translate="hero.cta1">Scopri la casa</a>
+      <a href="https://wa.me/393332062075" target="_blank" class="btn btn-ghost" data-translate="hero.cta2">Contatta Ornella</a>
+    </div>
+  </div>
+</header>
+
+<!-- Facts strip -->
+<div class="facts">
+  <div class="facts-inner">
+    <div class="fact"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.7"><circle cx="9" cy="7" r="3"/><path d="M3 21v-1a6 6 0 0 1 12 0v1"/><path d="M16 7a3 3 0 0 1 0 6"/><path d="M18 21v-1a6 6 0 0 0-2-4.5"/></svg><span data-translate="facts.f1">Fino a 4 ospiti</span></div>
+    <span class="fact-dot"></span>
+    <div class="fact"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.7"><path d="M3 18v-6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6"/><path d="M3 18h18"/><path d="M7 10V8a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2"/></svg><span data-translate="facts.f2">2 camere</span></div>
+    <span class="fact-dot"></span>
+    <div class="fact"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.7"><path d="M3 7v10M3 12h18v5M21 12v5"/><path d="M3 9h7a2 2 0 0 1 2 2v1"/></svg><span data-translate="facts.f3">3 letti</span></div>
+    <span class="fact-dot"></span>
+    <div class="fact"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.7"><path d="M3 13c3-2 5-2 9 0s6 2 9 0"/><path d="M3 18c3-2 5-2 9 0s6 2 9 0"/><circle cx="12" cy="6" r="2.5"/></svg><span data-translate="facts.f4">Vista sulla baia</span></div>
+    <span class="fact-dot"></span>
+    <div class="fact"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.7"><path d="M4 21V8l8-5 8 5v13"/><path d="M9 21v-6h6v6"/></svg><span data-translate="facts.f5">Nella medina</span></div>
+  </div>
+</div>
+
+<!-- About -->
+<section id="about">
+  <div class="wrap about-grid">
+    <div class="about-content">
+      <div class="eyebrow" data-translate="nav.about">La Casa</div>
+      <h2 data-translate="about.title">Una casa vera, con una storia vera</h2>
+      <p data-translate="about.p1">Dar Safra è una casa autentica nell'antica medina di Tangeri…</p>
+      <p data-translate="about.p2">La casa è verticale, su più livelli…</p>
+      <p data-translate="about.p3">Si trova nell'antica medina, a pochi passi dal Petit Socco…</p>
+      <div class="tags">
+        <span class="tag" data-translate="about.tag1">Fino a 4 ospiti</span>
+        <span class="tag" data-translate="about.tag2">2 camere</span>
+        <span class="tag" data-translate="about.tag3">3 letti</span>
+        <span class="tag" data-translate="about.tag4">Arredi anni '50</span>
+        <span class="tag" data-translate="about.tag5">Vista baia</span>
+        <span class="tag" data-translate="about.tag6">Petit Socco</span>
+      </div>
+    </div>
+    <div class="about-photo"><img src="foto/27.avif" alt="Vista sulla baia di Tangeri da Dar Safra"></div>
+  </div>
+</section>
+
+<!-- How it works -->
+<section id="how">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="eyebrow" data-translate="nav.how">Come funziona</div>
+      <h2 data-translate="how.title">Come funziona</h2>
+      <p data-translate="how.intro">Dar Safra si sviluppa in verticale su più livelli…</p>
+    </div>
+
+    <div class="how-steps">
+      <div class="how-step">
+        <span class="step-ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.7"><rect x="5" y="3" width="14" height="18" rx="1"/><path d="M5 21h14"/><circle cx="15" cy="12" r="1"/></svg></span>
+        <h4 data-translate="how.h1">Ingresso condiviso</h4>
+        <p data-translate="how.p1">Si entra da un ingresso condiviso con divanetti…</p>
+      </div>
+      <div class="how-step">
+        <span class="step-ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.7"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span>
+        <h4 data-translate="how.h2">Spazi esclusivi</h4>
+        <p data-translate="how.p2">Una scala interna collega l'ingresso al primo e al secondo piano…</p>
+        <p data-translate="how.p2b">Si soggiorna in piena autonomia…</p>
+      </div>
+    </div>
+
+    <div class="rental-callout">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6"><path d="M3 21h18"/><path d="M5 21V8l7-4 7 4v13"/><path d="M9 21v-5h6v5"/><path d="M9 11h.01M15 11h.01"/></svg>
+      <div class="rental-text">
+        <div>
+          <h4 data-translate="how.rental.title">Cosa puoi prenotare</h4>
+          <p data-translate="how.rental.text">Puoi affittare tutta la casa — primo e secondo piano insieme — oppure, se preferisci, solo il secondo piano.</p>
+        </div>
+        <span class="rental-min">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.7"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>
+          <span data-translate="how.rental.min">Soggiorno minimo: 3 notti</span>
+        </span>
+      </div>
+    </div>
+
+    <h3 class="diagram-title" data-translate="how.diagram.title">La casa, piano per piano</h3>
+    <div class="floors">
+      <div class="floor">
+        <div class="floor-ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.7"><path d="M12 3v3M5 8l-2 2M19 8l2 2M12 11a5 5 0 0 1 5 5v3H7v-3a5 5 0 0 1 5-5Z"/><path d="M5 19h14"/></svg></div>
+        <div class="floor-main"><h4 data-translate="floor.terrace.name">Terrazze</h4><span data-translate="floor.terrace.desc">Prima terrazza e rooftop con vista a 360°</span></div>
+        <span class="floor-badge badge-guests" data-translate="floor.badge.guests">Ospiti</span>
+      </div>
+      <div class="floor">
+        <div class="floor-ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.7"><path d="M4 21V9l8-6 8 6v12"/><rect x="9" y="13" width="6" height="8"/></svg></div>
+        <div class="floor-main"><h4 data-translate="floor.second.name">Secondo piano</h4><span data-translate="floor.second.desc">Cucina, camera matrimoniale e bagno con doccia</span></div>
+        <span class="floor-badge badge-guests" data-translate="floor.badge.guests">Ospiti</span>
+      </div>
+      <div class="floor">
+        <div class="floor-ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.7"><path d="M4 21V9l8-6 8 6v12"/><path d="M9 21v-6h6v6"/></svg></div>
+        <div class="floor-main"><h4 data-translate="floor.first.name">Primo piano</h4><span data-translate="floor.first.desc">Salottino con vista baia e zona notte</span></div>
+        <span class="floor-badge badge-guests" data-translate="floor.badge.guests">Ospiti</span>
+      </div>
+      <div class="floor is-shared">
+        <div class="floor-ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.7"><path d="M3 21V11l9-7 9 7v10"/><path d="M3 21h18"/><circle cx="12" cy="14" r="2"/></svg></div>
+        <div class="floor-main"><h4 data-translate="floor.ground.name">Piano terra</h4><span data-translate="floor.ground.desc">Ingresso condiviso, camera di Ornella e bagno</span></div>
+        <span class="floor-badge badge-shared" data-translate="floor.badge.shared">Condiviso</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Spaces -->
+<section id="spaces">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="eyebrow" data-translate="nav.spaces">Gli Spazi</div>
+      <h2 data-translate="spaces.title">Gli Spazi</h2>
+    </div>
+    <div class="spaces-grid">
+
+      <article class="space-card">
+        <div class="carousel" data-space="ground">
+          <div class="carousel-slide active"><img src="foto/11.avif" alt="Piano terra" loading="lazy"></div>
+          <div class="carousel-slide"><img src="foto/6.avif" alt="Piano terra" loading="lazy"></div>
+          <button class="carousel-nav carousel-prev" onclick="prevSlide('ground')" aria-label="Precedente">‹</button>
+          <button class="carousel-nav carousel-next" onclick="nextSlide('ground')" aria-label="Successiva">›</button>
+          <div class="carousel-dots"><span class="dot active" onclick="goToSlide('ground',0)"></span><span class="dot" onclick="goToSlide('ground',1)"></span></div>
+        </div>
+        <div class="space-content">
+          <h3 data-translate="spaces.h1">Piano terra — Ingresso e accoglienza</h3>
+          <p data-translate="spaces.p1">L'ingresso condiviso, un angolo accogliente con divanetti…</p>
+          <ul class="space-list">
+            <li data-translate="spaces.l1">Ingresso con divanetti</li>
+            <li data-translate="spaces.l2">Camera privata di Ornella</li>
+            <li data-translate="spaces.l3">Bagno ad uso comune</li>
+          </ul>
+        </div>
+      </article>
+
+      <article class="space-card">
+        <div class="carousel" data-space="first">
+          <div class="carousel-slide active"><img src="foto/8.avif" alt="Primo piano" loading="lazy"></div>
+          <div class="carousel-slide"><img src="foto/18.avif" alt="Primo piano" loading="lazy"></div>
+          <div class="carousel-slide"><img src="foto/5.avif" alt="Primo piano" loading="lazy"></div>
+          <div class="carousel-slide"><img src="foto/19.avif" alt="Primo piano" loading="lazy"></div>
+          <div class="carousel-slide"><img src="foto/20.jpg" alt="Primo piano" loading="lazy"></div>
+          <button class="carousel-nav carousel-prev" onclick="prevSlide('first')" aria-label="Precedente">‹</button>
+          <button class="carousel-nav carousel-next" onclick="nextSlide('first')" aria-label="Successiva">›</button>
+          <div class="carousel-dots"><span class="dot active" onclick="goToSlide('first',0)"></span><span class="dot" onclick="goToSlide('first',1)"></span><span class="dot" onclick="goToSlide('first',2)"></span><span class="dot" onclick="goToSlide('first',3)"></span><span class="dot" onclick="goToSlide('first',4)"></span></div>
+        </div>
+        <div class="space-content">
+          <h3 data-translate="spaces.h2">Primo piano — Salottino e zona notte</h3>
+          <p data-translate="spaces.p2">Un salottino in stile marocchino con grandi finestre ad arco…</p>
+          <ul class="space-list">
+            <li data-translate="spaces.l4">Salottino con vista sulla baia</li>
+            <li data-translate="spaces.l5">Zona notte con soppalco</li>
+            <li data-translate="spaces.l6">Uso esclusivo ospiti</li>
+          </ul>
+        </div>
+      </article>
+
+      <article class="space-card">
+        <div class="carousel" data-space="second">
+          <div class="carousel-slide active"><img src="foto/13.avif" alt="Secondo piano" loading="lazy"></div>
+          <div class="carousel-slide"><img src="foto/12.avif" alt="Secondo piano" loading="lazy"></div>
+          <div class="carousel-slide"><img src="foto/10.avif" alt="Secondo piano" loading="lazy"></div>
+          <div class="carousel-slide"><img src="foto/30.avif" alt="Secondo piano" loading="lazy"></div>
+          <button class="carousel-nav carousel-prev" onclick="prevSlide('second')" aria-label="Precedente">‹</button>
+          <button class="carousel-nav carousel-next" onclick="nextSlide('second')" aria-label="Successiva">›</button>
+          <div class="carousel-dots"><span class="dot active" onclick="goToSlide('second',0)"></span><span class="dot" onclick="goToSlide('second',1)"></span><span class="dot" onclick="goToSlide('second',2)"></span><span class="dot" onclick="goToSlide('second',3)"></span></div>
+        </div>
+        <div class="space-content">
+          <h3 data-translate="spaces.h3">Secondo piano — Cucina e camera matrimoniale</h3>
+          <p data-translate="spaces.p3">Cucina, camera matrimoniale e bagno con doccia…</p>
+          <ul class="space-list">
+            <li data-translate="spaces.l7">Cucina attrezzata</li>
+            <li data-translate="spaces.l8">Camera matrimoniale</li>
+            <li data-translate="spaces.l9">Doccia e servizi separati</li>
+            <li data-translate="spaces.l10">Accesso alle terrazze</li>
+          </ul>
+        </div>
+      </article>
+
+      <article class="space-card">
+        <div class="carousel" data-space="terrace">
+          <div class="carousel-slide active"><img src="foto/16.avif" alt="Terrazze" loading="lazy"></div>
+          <div class="carousel-slide"><img src="foto/29.avif" alt="Terrazze" loading="lazy"></div>
+          <div class="carousel-slide"><img src="foto/26.avif" alt="Terrazze" loading="lazy"></div>
+          <div class="carousel-slide"><img src="foto/24.avif" alt="Terrazze" loading="lazy"></div>
+          <button class="carousel-nav carousel-prev" onclick="prevSlide('terrace')" aria-label="Precedente">‹</button>
+          <button class="carousel-nav carousel-next" onclick="nextSlide('terrace')" aria-label="Successiva">›</button>
+          <div class="carousel-dots"><span class="dot active" onclick="goToSlide('terrace',0)"></span><span class="dot" onclick="goToSlide('terrace',1)"></span><span class="dot" onclick="goToSlide('terrace',2)"></span><span class="dot" onclick="goToSlide('terrace',3)"></span></div>
+        </div>
+        <div class="space-content">
+          <h3 data-translate="spaces.h4">Terrazze — Rooftop marocchino</h3>
+          <p data-translate="spaces.p4">Dalla cucina si raggiunge la prima terrazza…</p>
+          <ul class="space-list">
+            <li data-translate="spaces.l11">Vista 360° su baia e medina</li>
+            <li data-translate="spaces.l12">Divano in muratura tradizionale</li>
+            <li data-translate="spaces.l13">Colazioni, letture, tramonti</li>
+          </ul>
+        </div>
+      </article>
+
+    </div>
+  </div>
+</section>
+
+<!-- Good to know -->
+<section id="goodtoknow">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="eyebrow" data-translate="nav.goodtoknow">Buono a sapersi</div>
+      <h2 data-translate="gtk.title">Buono a sapersi</h2>
+      <p data-translate="gtk.subtitle">Le cose pratiche, dette con chiarezza.</p>
+    </div>
+    <div class="gtk-grid">
+      <div class="gtk-card feature">
+        <div class="gtk-ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.7"><rect x="2" y="13" width="14" height="4" rx="1"/><path d="M18 13v4M21 13v4"/><path d="M16 9c0-2-2-2-2-4M19 9c0-2-2-2-2-4"/></svg></div>
+        <h4 data-translate="gtk.smoke.t">Si può fumare</h4>
+        <p data-translate="gtk.smoke.d">Qui non è vietato fumare: Ornella stessa fuma…</p>
+      </div>
+      <div class="gtk-card">
+        <div class="gtk-ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.7"><circle cx="9" cy="7" r="3"/><path d="M3 21v-1a6 6 0 0 1 12 0v1"/><path d="M16 7a3 3 0 0 1 0 6"/><path d="M18 21v-1a6 6 0 0 0-2-4.5"/></svg></div>
+        <h4 data-translate="gtk.guests.t">Fino a 4 ospiti</h4>
+        <p data-translate="gtk.guests.d">Due camere e tre letti…</p>
+      </div>
+      <div class="gtk-card">
+        <div class="gtk-ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.7"><circle cx="8" cy="8" r="4"/><path d="M11 11l8 8M16 16l2-2M18 18l2-2"/></svg></div>
+        <h4 data-translate="gtk.flex.t">Affitto flessibile</h4>
+        <p data-translate="gtk.flex.d">Tutta la casa oppure solo il secondo piano…</p>
+      </div>
+      <div class="gtk-card">
+        <div class="gtk-ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.7"><circle cx="12" cy="8" r="4"/><path d="M5 21v-1a7 7 0 0 1 14 0v1"/></svg></div>
+        <h4 data-translate="gtk.host.t">Host sul posto</h4>
+        <p data-translate="gtk.host.d">Ornella è presente con discrezione…</p>
+      </div>
+      <div class="gtk-card">
+        <div class="gtk-ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></svg></div>
+        <h4 data-translate="gtk.lang.t">Lingue</h4>
+        <p data-translate="gtk.lang.d">Ornella parla italiano, francese e spagnolo.</p>
+      </div>
+      <div class="gtk-card">
+        <div class="gtk-ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.7"><path d="M3 20h5v-4h4v-4h4V8h5"/><path d="M3 20V4"/></svg></div>
+        <h4 data-translate="gtk.levels.t">Casa su più livelli</h4>
+        <p data-translate="gtk.levels.d">Gli spazi si sviluppano in verticale…</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Gallery -->
+<section id="gallery">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="eyebrow" data-translate="nav.gallery">Galleria</div>
+      <h2 data-translate="gallery.title">Galleria</h2>
+      <p data-translate="gallery.subtitle">Tocca una foto per ingrandirla.</p>
+    </div>
+    <div class="gallery-grid" id="galleryGrid"></div>
+  </div>
+</section>
+
+<!-- Lightbox -->
+<div class="lightbox" id="lightbox">
+  <img class="lightbox-image" id="lightboxImage" alt="">
+  <button class="lightbox-close" id="lightboxClose" aria-label="Chiudi">&times;</button>
+  <button class="lightbox-nav lightbox-prev" id="lightboxPrev" aria-label="Precedente">‹</button>
+  <button class="lightbox-nav lightbox-next" id="lightboxNext" aria-label="Successiva">›</button>
+  <div class="lightbox-count" id="lightboxCount"></div>
+</div>
+
+<!-- Location -->
+<section id="location">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="eyebrow" data-translate="nav.location">Dove siamo</div>
+      <h2 data-translate="location.title">Nel cuore della medina</h2>
+    </div>
+    <div class="map-grid">
+      <div id="mapid" class="map"></div>
+      <div class="loc-info">
+        <h3 data-translate="location.subtitle">Tutto a portata di passo</h3>
+        <p data-translate="location.description">Dall'antica medina raggiungi a piedi il Petit Socco, i souk…</p>
+        <div class="distances">
+          <div class="distance"><div class="d-label" data-translate="location.d1">Petit Socco</div><div class="d-time" data-translate="location.t1">2 min</div></div>
+          <div class="distance"><div class="d-label" data-translate="location.d2">Grand Socco</div><div class="d-time" data-translate="location.t2">5 min</div></div>
+          <div class="distance"><div class="d-label" data-translate="location.d3">Porto / Spiaggia</div><div class="d-time" data-translate="location.t3">10 min</div></div>
+          <div class="distance"><div class="d-label" data-translate="location.d4">Souk / Medina</div><div class="d-time" data-translate="location.t4">Immediati</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Contact -->
+<section id="contact">
+  <div class="wrap">
+    <img class="ornella-photo" src="foto/ornella.jpg" alt="Ornella">
+    <h2 data-translate="contact.title">Contatta Ornella</h2>
+    <p data-translate="contact.description">Per disponibilità e informazioni, scrivi o chiama direttamente…</p>
+    <div class="contact-buttons">
+      <a href="https://wa.me/393332062075" target="_blank" class="contact-btn wa">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15l-1.3 4.7 4.8-1.3A10 10 0 1 0 12 2Zm5.7 14.3c-.2.6-1.2 1.2-1.7 1.2-.4 0-1 .2-3.3-.7-2.8-1.1-4.6-4-4.7-4.2-.1-.2-1.1-1.5-1.1-2.8 0-1.3.7-2 .9-2.2.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.8 2c.1.2.1.4 0 .5l-.4.5c-.2.2-.3.4-.1.7.2.3.9 1.4 1.9 2.3 1.3 1.1 2.3 1.4 2.6 1.6.2.1.4.1.6-.1l.8-1c.2-.3.4-.2.6-.1l1.9.9c.3.1.4.2.5.3.1.2.1.8-.1 1.4Z"/></svg>
+        <span data-translate="contact.whatsapp">WhatsApp</span>
+      </a>
+      <a href="/cdn-cgi/l/email-protection#600f120e050c0c01140f0d0d011309555620070d01090c4e030f0d" class="contact-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>
+        <span data-translate="contact.email">Email</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <p>&copy; <span id="year">2026</span> Dar Safra — Memorie di Tangeri. <span data-translate="footer.text">Tutti i diritti riservati.</span></p>
+</footer>
+
+<a href="https://wa.me/393332062075" target="_blank" class="wa-float" aria-label="WhatsApp">
+  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15l-1.3 4.7 4.8-1.3A10 10 0 1 0 12 2Zm5.7 14.3c-.2.6-1.2 1.2-1.7 1.2-.4 0-1 .2-3.3-.7-2.8-1.1-4.6-4-4.7-4.2-.1-.2-1.1-1.5-1.1-2.8 0-1.3.7-2 .9-2.2.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.8 2c.1.2.1.4 0 .5l-.4.5c-.2.2-.3.4-.1.7.2.3.9 1.4 1.9 2.3 1.3 1.1 2.3 1.4 2.6 1.6.2.1.4.1.6-.1l.8-1c.2-.3.4-.2.6-.1l1.9.9c.3.1.4.2.5.3.1.2.1.8-.1 1.4Z"/></svg>
+</a>
+
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="translations.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
